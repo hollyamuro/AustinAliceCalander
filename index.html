@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 年 9 月 Austin Alice月曆</title>
+    <style>
+        :root {
+            --bg-color: #f7f6f1;
+            --calendar-bg: #fdfdfc;
+            --header-bg: #eaf1eb;
+            --text-dark: #1a4d3a;
+            --border-color: #eaeaea;
+            --highlight-bg: #fffde7;
+            --highlight-border: #fbc02d;
+        }
+
+        body {
+            font-family: "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .calendar-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: var(--calendar-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+            padding-bottom: 20px;
+        }
+
+        .calendar-header {
+            padding: 25px 30px 15px 30px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .calendar-header h1 {
+            color: var(--text-dark);
+            margin: 0;
+            font-size: 28px;
+        }
+
+        /* 跳到今天按鈕 */
+        .jump-today-btn {
+            background-color: #d35400;
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            transition: background-color 0.2s;
+        }
+
+        .jump-today-btn:hover {
+            background-color: #b54600;
+        }
+
+        /* 星期標題與服裝整合 */
+        .grid-header {
+            display: grid;
+            grid-template-columns: repeat(5, 2fr) repeat(2, 1fr);
+            background-color: var(--header-bg);
+            text-align: center;
+            font-weight: bold;
+            color: var(--text-dark);
+            padding: 12px 0;
+            font-size: 14px;
+            border-top: 2px solid var(--text-dark);
+            border-bottom: 2px solid var(--text-dark);
+        }
+
+        .grid-header > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .header-uniform {
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: normal;
+            color: var(--text-dark); 
+        }
+
+        /* 月曆主體 */
+        .grid-body {
+            display: grid;
+            grid-template-columns: repeat(5, 2fr) repeat(2, 1fr);
+            grid-auto-rows: minmax(160px, auto);
+        }
+
+        .day-cell {
+            background-color: var(--calendar-bg);
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .day-cell:nth-child(7n) {
+            border-right: none;
+        }
+
+        /* 電腦版底塊高亮區分 */
+        .day-cell.highlight-day {
+            background-color: var(--highlight-bg) !important;
+            border: 2px solid var(--highlight-border) !important;
+            box-shadow: 0 0 10px rgba(251, 192, 45, 0.4);
+        }
+
+        /* 手機版專用：每一格內的星期標題 (預設隱藏) */
+        .day-header-mobile {
+            display: none; 
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--text-dark);
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 4px;
+        }
+        .day-header-mobile .mobile-uniform {
+            font-size: 12px;
+            font-weight: normal;
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .day-date {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+
+        .empty-day {
+            background-color: var(--calendar-bg);
+        }
+
+        /* 事項群組容器 */
+        .event-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .tag-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        /* 圓角標籤設計 */
+        .tag-pill {
+            border-radius: 12px;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .sub-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #444;
+        }
+
+        /* 顏色主題 */
+        .pill-school { background-color: #ffeaea; color: #d32f2f; }
+        .pill-language-art { background-color: #fff0e6; color: #d35400; }
+        .pill-speech { background-color: #eaf5ee; color: #1a4d3a; }
+        .pill-steam { background-color: #e8f4fd; color: #0277bd; }
+        .pill-brother { background-color: #e0f2f1; color: #00796b; }
+
+        /* 內容樣式 */
+        .event-group p { margin: 0; font-size: 13px; color: #444; line-height: 1.4; padding-left: 2px; }
+        .event-group ul { list-style-type: disc; padding-left: 18px; margin: 0; font-size: 13px; color: #444; line-height: 1.5; }
+        .event-group li { margin-bottom: 2px; }
+
+        /* =========================================
+           響應式設計 (RWD)：手機螢幕小於 768px 時套用
+           ========================================= */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .calendar-header h1 { font-size: 22px; }
+            .grid-header { display: none; }
+            .grid-body { grid-template-columns: 1fr; }
+            .day-cell { border-right: none; border-bottom: 3px solid var(--header-bg); padding: 15px; }
+            .empty-day { display: none; }
+            .day-header-mobile { display: flex; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="calendar-container">
+    <div class="calendar-header">
+        <h1>2026 年 9 月 一年義班</h1>
+        <button class="jump-today-btn" onclick="scrollToToday()">📅 跳到今天</button>
+    </div>
+
+    <div class="grid-header">
+        <div>週一<div class="header-uniform">運動服</div></div>
+        <div>週二<div class="header-uniform">運動服</div></div>
+        <div>週三</div>
+        <div>週四<div class="header-uniform">制服</div></div>
+        <div>週五</div>
+        <div>週六</div>
+        <div>週日</div>
+    </div>
+
+    <div class="grid-body">
+        <div class="day-cell" data-date="2026-08-31">
+            <div class="day-header-mobile">週一 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">8/31</div>
+            <div class="event-group cat-brother">
+                <div class="tag-header"><span class="tag-pill pill-brother">弟弟聯絡本</span></div>
+                <ul>
+                    <li>國語課本/注音簿包書套(暑假作業補至P18)</li>
+                    <li>LA看雲端進度表複習，明帶文化課袋</li>
+                    <li>發下帳號密碼、日課表、作息表、簡歷表等請妥善保管</li>
+                    <li>「語文萬花筒」甲乙本放家裡練習</li>
+                    <li>帶親子共讀手冊 + 一把尺</li>
+                    <li>聯絡簿簽名、寫防災卡；清空花花資料夾明歸還</li>
+                </ul>
+            </div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Preview unit 1.</li></ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-01">
+            <div class="day-header-mobile">週二 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">1</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Review p. 2-3 and preview vocabulary p. 4, 7.</li></ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-02">
+            <div class="day-header-mobile">週三</div>
+            <div class="day-date">2</div>
+            <div class="event-group cat-school">
+                <div class="tag-header"><span class="tag-pill pill-school">全校</span></div>
+                <p>課後學藝營及多元分組課程開始上課</p>
+            </div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Review p. 4-5, read and spell the words out loud.</li></ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-03">
+            <div class="day-header-mobile">週四 <span class="mobile-uniform">制服</span></div>
+            <div class="day-date">3</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Read the vocabulary sentences on p. 6-7 out loud.</li></ul>
+            </div>
+            <div class="event-group cat-steam">
+                <div class="tag-header"><span class="tag-pill pill-steam">STEAM</span><span class="sub-title">Unit1. Lesson 1</span></div>
+                <ul><li>Read the tutorial and try the online platform</li></ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-04">
+            <div class="day-header-mobile">週五</div>
+            <div class="day-date">4</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul>
+                    <li>Read the phonics on p. 8-9.</li>
+                    <li>Scholastic reading.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-05"><div class="day-header-mobile">週六</div><div class="day-date">5</div></div>
+        <div class="day-cell" data-date="2026-09-06"><div class="day-header-mobile">週日</div><div class="day-date">6</div></div>
+
+        <div class="day-cell" data-date="2026-09-07">
+            <div class="day-header-mobile">週一 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">7</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Read p. 10-23 out loud, study the vocabulary.</li></ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-08">
+            <div class="day-header-mobile">週二 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">8</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Review p. 10-25, and read out loud.</li></ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-09">
+            <div class="day-header-mobile">週三</div>
+            <div class="day-date">9</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul>
+                    <li>Review p. 26 grammar.</li>
+                    <li>Review vocabulary p. 5, 7.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-10">
+            <div class="day-header-mobile">週四 <span class="mobile-uniform">制服</span></div>
+            <div class="day-date">10</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul>
+                    <li>Review p. 27-32 and read out loud.</li>
+                    <li>Vocabulary Quiz tomorrow.</li>
+                </ul>
+            </div>
+            <div class="event-group cat-steam">
+                <div class="tag-header"><span class="tag-pill pill-steam">STEAM</span><span class="sub-title">Engineers Use Tech?</span></div>
+                <ul>
+                    <li>Engineer It</li>
+                    <li>What is an Engineer?</li>
+                    <li>What Is Technology?</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-11">
+            <div class="day-header-mobile">週五</div>
+            <div class="day-date">11</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul>
+                    <li>Review p. 33 plural nouns.</li>
+                    <li>Reading worksheet.</li>
+                    <li>Scholastic Reading.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-12"><div class="day-header-mobile">週六</div><div class="day-date">12</div></div>
+        <div class="day-cell" data-date="2026-09-13"><div class="day-header-mobile">週日</div><div class="day-date">13</div></div>
+
+        <div class="day-cell" data-date="2026-09-14">
+            <div class="day-header-mobile">週一 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">14</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul>
+                    <li>Review p. 34-35.</li>
+                    <li>Sign vocabulary 1.1 quiz.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-15">
+            <div class="day-header-mobile">週二 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">15</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>No homework</li></ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-16">
+            <div class="day-header-mobile">週三</div>
+            <div class="day-date">16</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Review p 36-37, read out loud.</li></ul>
+            </div>
+            <div class="event-group cat-speech">
+                <div class="tag-header"><span class="tag-pill pill-speech">晨間演講</span><span class="sub-title">中文第 1 次</span></div>
+                <p>第一組 (1-4, 42-44)</p>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-17">
+            <div class="day-header-mobile">週四 <span class="mobile-uniform">制服</span></div>
+            <div class="day-date">17</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Phonics p. 38-39, read out loud.</li></ul>
+            </div>
+            <div class="event-group cat-steam">
+                <div class="tag-header"><span class="tag-pill pill-steam">STEAM</span><span class="sub-title">Scavenger Hunt</span></div>
+                <ul>
+                    <li>Engineer It: Take It Further</li>
+                    <li>Lesson Check</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-18">
+            <div class="day-header-mobile">週五</div>
+            <div class="day-date">18</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul>
+                    <li>Review p. 40-57.</li>
+                    <li>Review vocabulary p. 35, 37.</li>
+                    <li>Scholastic Reading.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-19">
+            <div class="day-header-mobile">週六</div>
+            <div class="day-date">19</div>
+            <div class="event-group cat-school">
+                <div class="tag-header"><span class="tag-pill pill-school">全校</span></div>
+                <p>學校日 (上午)</p>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-20"><div class="day-header-mobile">週日</div><div class="day-date">20</div></div>
+
+        <div class="day-cell" data-date="2026-09-21">
+            <div class="day-header-mobile">週一 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">21</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Review and read p. 58-59.</li></ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-22">
+            <div class="day-header-mobile">週二 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">22</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Study p. 60 grammar.</li></ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-23">
+            <div class="day-header-mobile">週三</div>
+            <div class="day-date">23</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul>
+                    <li>Read p. 61-64 out loud.</li>
+                    <li>Vocabulary quiz tomorrow.</li>
+                </ul>
+            </div>
+            <div class="event-group cat-speech">
+                <div class="tag-header"><span class="tag-pill pill-speech">晨間演講</span><span class="sub-title">英文第 1 次</span></div>
+                <p>第四組 (13-16, 32-35)</p>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-24">
+            <div class="day-header-mobile">週四 <span class="mobile-uniform">制服</span></div>
+            <div class="day-date">24</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul>
+                    <li>Review p. 65 grammar.</li>
+                    <li>Reading worksheet.</li>
+                    <li>Scholastic reading.</li>
+                </ul>
+            </div>
+            <div class="event-group cat-steam">
+                <div class="tag-header"><span class="tag-pill pill-steam">STEAM</span><span class="sub-title">Solve a Problem?</span></div>
+                <ul>
+                    <li>Step 1-5</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-25">
+            <div class="day-header-mobile">週五</div>
+            <div class="day-date">25</div>
+            <div class="event-group cat-school">
+                <div class="tag-header"><span class="tag-pill pill-school">全校</span></div>
+                <p>中秋節放假</p>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-26"><div class="day-header-mobile">週六</div><div class="day-date">26</div></div>
+        <div class="day-cell" data-date="2026-09-27"><div class="day-header-mobile">週日</div><div class="day-date">27</div></div>
+
+        <div class="day-cell" data-date="2026-09-28">
+            <div class="day-header-mobile">週一 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">28</div>
+            <div class="event-group cat-school">
+                <div class="tag-header"><span class="tag-pill pill-school">全校</span></div>
+                <p>教師節放假</p>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-29">
+            <div class="day-header-mobile">週二 <span class="mobile-uniform">運動服</span></div>
+            <div class="day-date">29</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul>
+                    <li>Review unit 1.</li>
+                    <li>Sign vocabulary 1.2 quiz.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="day-cell" data-date="2026-09-30">
+            <div class="day-header-mobile">週三</div>
+            <div class="day-date">30</div>
+            <div class="event-group cat-language-art">
+                <div class="tag-header"><span class="tag-pill pill-language-art">Language Arts</span></div>
+                <ul><li>Review for unit 1 quiz tomorrow.</li></ul>
+            </div>
+            <div class="event-group cat-speech">
+                <div class="tag-header"><span class="tag-pill pill-speech">晨間演講</span><span class="sub-title">中文第 2 次</span></div>
+                <p>第六組 (21-27)</p>
+            </div>
+        </div>
+        
+        <div class="day-cell empty-day"></div>
+        <div class="day-cell empty-day"></div>
+        <div class="day-cell empty-day"></div>
+        <div class="day-cell empty-day"></div>
+    </div>
+</div>
+
+<script>
+    function scrollToToday() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        const targetCell = document.querySelector(`.day-cell[data-date="${todayStr}"]`);
+
+        if (targetCell) {
+            document.querySelectorAll('.day-cell').forEach(cell => {
+                cell.classList.remove('highlight-day');
+            });
+
+            targetCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetCell.classList.add('highlight-day');
+        } else {
+            alert('今天不在 9 月行事曆範圍內或為假期！');
+        }
+    }
+</script>
+
+</body>
+</html>
