@@ -217,9 +217,16 @@
 
 <div class="calendar-container">
     <div class="calendar-header">
-        <h1>2026 年 9 月 一年義班</h1>
-        <button class="jump-today-btn" onclick="scrollToToday()">📅 跳到今天</button>
+    <h1>2026 年 9 月 一年義班</h1>
+    <div class="header-buttons">
+        <button class="add-event-btn" onclick="openAddModal()">
+            ➕ 新增行事曆
+        </button>
+        <button class="jump-today-btn" onclick="scrollToToday()">
+            📅 跳到今天
+        </button>
     </div>
+</div>
 
     <div class="grid-header">
         <div>週一<div class="header-uniform">運動服</div></div>
@@ -549,27 +556,906 @@
 </div>
 
 <script>
-    function scrollToToday() {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
 
-        const targetCell = document.querySelector(`.day-cell[data-date="${todayStr}"]`);
+let editingEvent = null;
 
-        if (targetCell) {
-            document.querySelectorAll('.day-cell').forEach(cell => {
+
+/* =========================================
+   跳到今天
+   ========================================= */
+
+function scrollToToday() {
+
+    const today = new Date();
+
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    const todayStr = `${year}-${month}-${day}`;
+
+    const targetCell =
+        document.querySelector(`.day-cell[data-date="${todayStr}"]`);
+
+    if (targetCell) {
+
+        document.querySelectorAll('.day-cell')
+            .forEach(cell => {
                 cell.classList.remove('highlight-day');
             });
 
-            targetCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            targetCell.classList.add('highlight-day');
+        targetCell.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        });
+
+        targetCell.classList.add('highlight-day');
+
+    } else {
+
+        alert('今天不在 9 月行事曆範圍內或為假期！');
+
+    }
+}
+
+
+/* =========================================
+   開啟新增視窗
+   ========================================= */
+
+function openAddModal(date = '') {
+
+    editingEvent = null;
+
+    document.getElementById('modalTitle').textContent =
+        '➕ 新增行事曆';
+
+    document.getElementById('eventDate').value = date;
+    document.getElementById('eventCategory').value = 'school';
+    document.getElementById('eventTitle').value = '';
+    document.getElementById('eventSubtitle').value = '';
+    document.getElementById('eventContent').value = '';
+
+    document.getElementById('deleteBtn').style.display = 'none';
+
+    document.getElementById('eventModal').classList.add('show');
+}
+
+
+/* =========================================
+   開啟修改視窗
+   ========================================= */
+
+function openEditModal(eventGroup) {
+
+    editingEvent = eventGroup;
+
+    const cell = eventGroup.closest('.day-cell');
+
+    const date = cell.dataset.date;
+
+    const categoryClass =
+        [...eventGroup.classList]
+        .find(c => c.startsWith('cat-'));
+
+    const category =
+        categoryClass
+        ? categoryClass.replace('cat-', '')
+        : 'school';
+
+    const titleElement =
+        eventGroup.querySelector('.tag-pill');
+
+    const subtitleElement =
+        eventGroup.querySelector('.sub-title');
+
+    const contentList =
+        eventGroup.querySelector('ul');
+
+    const contentParagraph =
+        eventGroup.querySelector('p');
+
+    let content = '';
+
+    if (contentList) {
+
+        content =
+            [...contentList.querySelectorAll('li')]
+            .map(li => li.textContent.trim())
+            .join('\n');
+
+    } else if (contentParagraph) {
+
+        content = contentParagraph.textContent.trim();
+
+    }
+
+    document.getElementById('modalTitle').textContent =
+        '✏️ 修改行事曆';
+
+    document.getElementById('eventDate').value = date;
+
+    document.getElementById('eventCategory').value =
+        category;
+
+    document.getElementById('eventTitle').value =
+        titleElement
+        ? titleElement.textContent.trim()
+        : '';
+
+    document.getElementById('eventSubtitle').value =
+        subtitleElement
+        ? subtitleElement.textContent.trim()
+        : '';
+
+    document.getElementById('eventContent').value =
+        content;
+
+    document.getElementById('deleteBtn').style.display =
+        'block';
+
+    document.getElementById('eventModal').classList.add('show');
+}
+
+
+/* =========================================
+   關閉視窗
+   ========================================= */
+
+function closeModal() {
+
+    document.getElementById('eventModal')
+        .classList.remove('show');
+
+    editingEvent = null;
+}
+
+
+/* =========================================
+   儲存事件
+   ========================================= */
+
+function saveEvent() {
+
+    const date =
+        document.getElementById('eventDate').value;
+
+    const category =
+        document.getElementById('eventCategory').value;
+
+    const title =
+        document.getElementById('eventTitle').value.trim();
+
+    const subtitle =
+        document.getElementById('eventSubtitle').value.trim();
+
+    const content =
+        document.getElementById('eventContent').value.trim();
+
+
+    if (!date) {
+        alert('請選擇日期！');
+        return;
+    }
+
+    if (!title) {
+        alert('請輸入標題！');
+        return;
+    }
+
+
+    /* 修改 */
+
+    if (editingEvent) {
+
+        const oldCell =
+            editingEvent.closest('.day-cell');
+
+        const newCell =
+            document.querySelector(
+                `.day-cell[data-date="${date}"]`
+            );
+
+        if (!newCell) {
+            alert('這個日期不在目前的月曆範圍內！');
+            return;
+        }
+
+        editingEvent.remove();
+
+        const newEvent =
+            createEventElement(
+                category,
+                title,
+                subtitle,
+                content
+            );
+
+        newCell.appendChild(newEvent);
+
+        saveCalendarData();
+
+        closeModal();
+
+        return;
+    }
+
+
+    /* 新增 */
+
+    const targetCell =
+        document.querySelector(
+            `.day-cell[data-date="${date}"]`
+        );
+
+    if (!targetCell) {
+        alert('這個日期不在目前的月曆範圍內！');
+        return;
+    }
+
+
+    const newEvent =
+        createEventElement(
+            category,
+            title,
+            subtitle,
+            content
+        );
+
+
+    targetCell.appendChild(newEvent);
+
+    saveCalendarData();
+
+    closeModal();
+
+    newEvent.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+    });
+}
+
+
+/* =========================================
+   建立事件 HTML
+   ========================================= */
+
+function createEventElement(
+    category,
+    title,
+    subtitle,
+    content
+) {
+
+    const group =
+        document.createElement('div');
+
+    group.className =
+        `event-group cat-${category}`;
+
+
+    const tagHeader =
+        document.createElement('div');
+
+    tagHeader.className =
+        'tag-header';
+
+
+    const tag =
+        document.createElement('span');
+
+    tag.className =
+        `tag-pill pill-${category}`;
+
+    tag.textContent = title;
+
+    tagHeader.appendChild(tag);
+
+
+    if (subtitle) {
+
+        const sub =
+            document.createElement('span');
+
+        sub.className =
+            'sub-title';
+
+        sub.textContent =
+            subtitle;
+
+        tagHeader.appendChild(sub);
+    }
+
+
+    group.appendChild(tagHeader);
+
+
+    if (content) {
+
+        const lines =
+            content
+            .split('\n')
+            .map(line => line.trim())
+            .filter(Boolean);
+
+
+        if (lines.length === 1) {
+
+            const p =
+                document.createElement('p');
+
+            p.textContent =
+                lines[0];
+
+            group.appendChild(p);
+
         } else {
-            alert('今天不在 9 月行事曆範圍內或為假期！');
+
+            const ul =
+                document.createElement('ul');
+
+            lines.forEach(line => {
+
+                const li =
+                    document.createElement('li');
+
+                li.textContent =
+                    line;
+
+                ul.appendChild(li);
+
+            });
+
+            group.appendChild(ul);
         }
     }
-</script>
 
+
+    group.addEventListener(
+        'click',
+        function(e) {
+
+            e.stopPropagation();
+
+            openEditModal(group);
+
+        }
+    );
+
+
+    return group;
+}
+
+
+/* =========================================
+   刪除事件
+   ========================================= */
+
+function deleteEvent() {
+
+    if (!editingEvent) {
+        return;
+    }
+
+
+    const title =
+        editingEvent
+        .querySelector('.tag-pill')
+        ?.textContent || '這個事件';
+
+
+    const confirmed =
+        confirm(
+            `確定要刪除「${title}」嗎？`
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    editingEvent.remove();
+
+    saveCalendarData();
+
+    closeModal();
+}
+
+
+/* =========================================
+   儲存到 localStorage
+   ========================================= */
+
+function saveCalendarData() {
+
+    const data = [];
+
+
+    document.querySelectorAll(
+        '.day-cell[data-date]'
+    ).forEach(cell => {
+
+        const date =
+            cell.dataset.date;
+
+        const events = [];
+
+
+        cell.querySelectorAll(
+            '.event-group'
+        ).forEach(group => {
+
+            const categoryClass =
+                [...group.classList]
+                .find(c => c.startsWith('cat-'));
+
+
+            const category =
+                categoryClass
+                ? categoryClass.replace('cat-', '')
+                : 'school';
+
+
+            const title =
+                group.querySelector('.tag-pill')
+                ?.textContent.trim() || '';
+
+
+            const subtitle =
+                group.querySelector('.sub-title')
+                ?.textContent.trim() || '';
+
+
+            let content = '';
+
+
+            const lis =
+                group.querySelectorAll('li');
+
+
+            if (lis.length) {
+
+                content =
+                    [...lis]
+                    .map(li => li.textContent.trim())
+                    .join('\n');
+
+            } else {
+
+                content =
+                    group.querySelector('p')
+                    ?.textContent.trim() || '';
+            }
+
+
+            events.push({
+                category,
+                title,
+                subtitle,
+                content
+            });
+
+        });
+
+
+        if (events.length) {
+
+            data.push({
+                date,
+                events
+            });
+
+        }
+
+    });
+
+
+    localStorage.setItem(
+        'austinAliceCalendar2026',
+        JSON.stringify(data)
+    );
+}
+
+
+/* =========================================
+   載入 localStorage
+   ========================================= */
+
+function loadCalendarData() {
+
+    const saved =
+        localStorage.getItem(
+            'austinAliceCalendar2026'
+        );
+
+
+    if (!saved) {
+        return;
+    }
+
+
+    try {
+
+        const data =
+            JSON.parse(saved);
+
+
+        data.forEach(day => {
+
+            const cell =
+                document.querySelector(
+                    `.day-cell[data-date="${day.date}"]`
+                );
+
+
+            if (!cell) {
+                return;
+            }
+
+
+            /*
+             * 只移除之前由系統新增的事件。
+             * 原本 HTML 裡的事件保留。
+             */
+
+            day.events.forEach(event => {
+
+                const element =
+                    createEventElement(
+                        event.category,
+                        event.title,
+                        event.subtitle,
+                        event.content
+                    );
+
+                cell.appendChild(element);
+
+            });
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            '無法讀取行事曆資料',
+            error
+        );
+
+    }
+}
+
+
+/* =========================================
+   點擊空白日期 → 新增
+   ========================================= */
+
+document.querySelectorAll(
+    '.day-cell[data-date]'
+).forEach(cell => {
+
+    cell.addEventListener(
+        'dblclick',
+        function(e) {
+
+            if (
+                e.target.closest('.event-group')
+            ) {
+                return;
+            }
+
+            openAddModal(
+                cell.dataset.date
+            );
+
+        }
+    );
+
+});
+
+
+/* =========================================
+   點擊 Modal 外面關閉
+   ========================================= */
+
+document.getElementById('eventModal')
+    .addEventListener('click', function(e) {
+
+        if (e.target === this) {
+            closeModal();
+        }
+
+    });
+
+
+/* =========================================
+   初始化
+   ========================================= */
+
+document.querySelectorAll(
+    '.event-group'
+).forEach(group => {
+
+    group.addEventListener(
+        'click',
+        function(e) {
+
+            e.stopPropagation();
+
+            openEditModal(group);
+
+        }
+    );
+
+});
+
+
+loadCalendarData();
+
+</script>
+<!-- 新增 / 修改行事曆視窗 -->
+<div id="eventModal" class="modal">
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <h2 id="modalTitle">➕ 新增行事曆</h2>
+            <button class="close-btn" onclick="closeModal()">×</button>
+        </div>
+
+        <div class="form-group">
+            <label>日期</label>
+            <input type="date" id="eventDate">
+        </div>
+
+        <div class="form-group">
+            <label>類別</label>
+            <select id="eventCategory">
+                <option value="school">全校</option>
+                <option value="language-art">Language Arts</option>
+                <option value="speech">晨間演講</option>
+                <option value="steam">STEAM</option>
+                <option value="brother">弟弟聯絡本</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>標題</label>
+            <input
+                type="text"
+                id="eventTitle"
+                placeholder="例如：Language Arts"
+            >
+        </div>
+
+        <div class="form-group">
+            <label>副標題（可不填）</label>
+            <input
+                type="text"
+                id="eventSubtitle"
+                placeholder="例如：Unit 1"
+            >
+        </div>
+
+        <div class="form-group">
+            <label>內容</label>
+            <textarea
+                id="eventContent"
+                rows="5"
+                placeholder="輸入行事曆內容，一行一項"x
+            ></textarea>
+        </div>
+
+        <div class="modal-buttons">
+            <button
+                id="deleteBtn"
+                class="delete-btn"
+                onclick="deleteEvent()"
+                style="display:none;"
+            >
+                🗑️ 刪除
+            </button>
+
+            <div class="right-buttons">
+                <button class="cancel-btn" onclick="closeModal()">
+                    取消
+                </button>
+
+                <button class="save-btn" onclick="saveEvent()">
+                    💾 儲存
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
 </body>
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.add-event-btn {
+    background-color: #1a4d3a;
+    color: white;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 20px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+.add-event-btn:hover {
+    background-color: #123b2d;
+}
+
+/* Modal */
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    inset: 0;
+    background-color: rgba(0,0,0,0.45);
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 14px;
+    padding: 24px;
+    box-sizing: border-box;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: var(--text-dark);
+    font-size: 22px;
+}
+
+.close-btn {
+    border: none;
+    background: transparent;
+    font-size: 30px;
+    color: #777;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    color: #444;
+    margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #1a4d3a;
+    box-shadow: 0 0 0 2px rgba(26,77,58,0.1);
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.right-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.save-btn,
+.cancel-btn,
+.delete-btn {
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.save-btn {
+    background-color: #1a4d3a;
+    color: white;
+}
+
+.cancel-btn {
+    background-color: #eee;
+    color: #444;
+}
+
+.delete-btn {
+    background-color: #d32f2f;
+    color: white;
+}
+
+.save-btn:hover {
+    background-color: #123b2d;
+}
+
+.delete-btn:hover {
+    background-color: #b71c1c;
+}
+
+/* 可以點擊事件 */
+.event-group {
+    cursor: pointer;
+    position: relative;
+}
+
+.event-group:hover {
+    background-color: rgba(0,0,0,0.025);
+    border-radius: 6px;
+}
+
+/* 手機 */
+
+@media (max-width: 768px) {
+
+    .header-buttons {
+        width: 100%;
+    }
+
+    .header-buttons button {
+        flex: 1;
+        min-width: 130px;
+    }
+
+    .modal-content {
+        padding: 20px;
+        max-height: 92vh;
+    }
+
+    .modal-header h2 {
+        font-size: 19px;
+    }
+}
 </html>
